@@ -1,0 +1,8 @@
+{
+  "transcript": "Beginning\nFive seconds\nUnaligned example",
+  "words": [
+    {"word": "beginning", "case": "success", "startOffset": 0, "endOffset": 9, "start": 0, "end": 2, "phones": []},
+    {"word": "five seconds", "case": "success", "startOffset": 10, "endOffset": 22, "start": 5, "end": 7, "phones": []},
+    {"word": "unaligned example", "case": "not-found-in-audio", "startOffset": 23, "endOffset": 40}
+  ]
+}

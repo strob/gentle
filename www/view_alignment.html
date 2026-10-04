@@ -52,6 +52,26 @@ html, body {
     width: 50%;
     display: inline-block;
 }
+#youtube {
+    margin: 70px 15px 20px;
+    max-width: 600px;
+    font-family: Helvetica, sans-serif;
+}
+#youtube-player {
+    width: 100%;
+    height: 338px;
+    min-width: 200px;
+    min-height: 200px;
+}
+#youtube-status {
+    line-height: 1.5em;
+}
+body.youtube #transcript {
+    margin-top: 20px;
+}
+@media (max-width: 480px) {
+    #youtube-player { height: 240px; }
+}
 #transcript {
     margin: 0 15px;
     margin-top: 70px;
@@ -124,7 +144,12 @@ html, body {
       <h1 class="home"><a href="/">Gentle</a></h1>
       <audio id="audio" src="a.wav" controls="true"></audio>
       <img src="/preloader.gif" id="preloader" alt="loading...">
-      <span id="downloads"> </div>
+      <span id="downloads"></span>
+    </div>
+    <div id="youtube" hidden>
+      <div id="youtube-player"></div>
+      <p id="youtube-status" role="status" aria-live="polite"></p>
+      <p>Click a transcript word to play from that point. Press Space while the transcript page has focus to pause.</p>
     </div>
     <div id="transcript"></div>
     <div id="footer">
@@ -147,11 +172,143 @@ function get_json(url, cb) {
     });
 }
 
+// Leave empty for the original audio player. YouTube requires HTTP or HTTPS.
+var YOUTUBE_VIDEO_ID = "";
+// Disable when making a standalone page without Gentle's download files/routes.
+var SHOW_DOWNLOADS = true;
+
+function create_audio_media(audio) {
+    return {
+        getCurrentTime: function() { return audio.currentTime; },
+        seekAndPlay: function(time) {
+            audio.currentTime = time;
+            var playing = audio.play();
+            if(playing && playing.catch) {
+                playing.catch(function() {}); // Native controls remain available.
+            }
+        },
+        pause: function() { audio.pause(); },
+        setVisible: function(visible) {
+            audio.style.visibility = visible ? "visible" : "hidden";
+        }
+    };
+}
+
+function create_youtube_media(videoId) {
+    var container = document.getElementById("youtube");
+    var status = document.getElementById("youtube-status");
+    var player;
+    var ready = false;
+    var failed = false;
+    var pendingTime = null;
+    var readyTimeout;
+
+    container.hidden = false;
+    document.body.classList.add("youtube");
+
+    function message(text) { status.textContent = text; }
+    function seekAndPlay(time) {
+        if(failed) { return; }
+        if(!ready) {
+            pendingTime = time;
+            return;
+        }
+        player.seekTo(time, true);
+        player.playVideo();
+    }
+    var media = {
+        getCurrentTime: function() { return ready ? player.getCurrentTime() : NaN; },
+        seekAndPlay: seekAndPlay,
+        pause: function() {
+            pendingTime = null;
+            if(ready) { player.pauseVideo(); }
+        },
+        setVisible: function(visible) {
+            container.style.visibility = visible ? "visible" : "hidden";
+        }
+    };
+
+    if(!/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        failed = true;
+        message("Enter the 11-character YouTube video ID in YOUTUBE_VIDEO_ID.");
+        return media;
+    }
+    if(window.location.protocol !== "http:" && window.location.protocol !== "https:") {
+        failed = true;
+        message("YouTube playback needs HTTP or HTTPS. Serve this folder locally (for example, python3 -m http.server 8000), then open the page at http://localhost:8000/.");
+        return media;
+    }
+
+    message("Loading YouTube player...");
+    function createPlayer() {
+        player = new YT.Player("youtube-player", {
+            videoId: videoId,
+            playerVars: { playsinline: 1, origin: window.location.origin },
+            events: {
+                onReady: function(event) {
+                    player = event.target;
+                    ready = true;
+                    clearTimeout(readyTimeout);
+                    message("");
+                    if(pendingTime !== null) {
+                        var time = pendingTime;
+                        pendingTime = null;
+                        seekAndPlay(time);
+                    }
+                },
+                onAutoplayBlocked: function() {
+                    message("Playback was blocked by your browser. Press Play in the video to continue.");
+                },
+                onStateChange: function(event) {
+                    if(event.data === 1) { message(""); }
+                },
+                onError: function(event) {
+                    failed = true;
+                    ready = false;
+                    pendingTime = null;
+                    clearTimeout(readyTimeout);
+                    var detail = event.data === 153
+                        ? "YouTube requires a Referer header. Use HTTP or HTTPS and allow the page origin to be sent."
+                        : "The video may be unavailable or may not allow embedded playback.";
+                    message("YouTube error " + event.data + ". " + detail);
+                }
+            }
+        });
+    }
+    readyTimeout = setTimeout(function() {
+        if(!ready && !failed) {
+            message("YouTube is taking longer to load. Check your connection and whether the browser blocks YouTube, then reload this page.");
+        }
+    }, 15000);
+    if(window.YT && window.YT.Player) {
+        createPlayer();
+    } else {
+        window.onYouTubeIframeAPIReady = createPlayer;
+        var script = document.createElement("script");
+        script.src = "https://www.youtube.com/iframe_api";
+        script.onerror = function() {
+            failed = true;
+            clearTimeout(readyTimeout);
+            message("Unable to load YouTube. Check your connection and browser content blocking, then reload this page.");
+        };
+        document.head.appendChild(script);
+    }
+    return media;
+}
+
 var $a = document.getElementById("audio");
+var media;
+if(YOUTUBE_VIDEO_ID) {
+    $a.style.display = "none";
+    $a.removeAttribute("src");
+    media = create_youtube_media(YOUTUBE_VIDEO_ID);
+} else {
+    media = create_audio_media($a);
+}
 window.onkeydown = function(ev) {
     if(ev.keyCode == 32) {
         ev.preventDefault();
-        $a.pause();
+        media.pause();
     }
 }
 
@@ -223,7 +380,7 @@ function highlight_phone(t) {
 }
 
 function highlight_word() {
-    var t = $a.currentTime;
+    var t = media.getCurrentTime();
     // XXX: O(N); use binary search
     var hits = wds.filter(function(x) {
         return (t - x.start) > 0.01 && (x.end - t) > 0.01;
@@ -284,9 +441,7 @@ function render(ret) {
         }
         $wd.onclick = function() {
             if(wd.start !== undefined) {
-                console.log(wd.start);
-                $a.currentTime = wd.start;
-                $a.play();
+                media.seekAndPlay(wd.start);
             }
         };
         $trans.appendChild($wd);
@@ -300,6 +455,7 @@ function render(ret) {
 }
 
 function show_downloads() {
+    if(!SHOW_DOWNLOADS) { return; }
     var $d = document.getElementById("downloads");
     $d.textContent = "Download as: ";
     var uid = window.location.pathname.split("/")[2];
@@ -372,7 +528,7 @@ function update() {
     else  {
 	// Show the status
         get_json('status.json', function(ret) {
-	    $a.style.visibility = 'hidden';
+            media.setVisible(false);
             if (ret.status == 'ERROR') {
                 $preloader.style.visibility = 'hidden';
                 $trans.innerHTML = '<b>' + ret.status + ': ' + ret.error + '</b>';

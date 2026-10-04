@@ -31,3 +31,6 @@ python3 align.py audio.mp3 words.txt
 ```
 
 The default behaviour outputs the JSON to stdout.  See `python3 align.py --help` for options.
+
+For playback of an existing alignment with an embedded YouTube video, see the
+[YouTube output example](examples/youtube_viewer.md).
