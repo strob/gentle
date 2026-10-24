@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Gentle · YouTube transcript</title>
+  <style>
+    body { max-width: 820px; margin: 2rem auto; padding: 0 1rem; color: #222; font: 18px/1.6 system-ui, sans-serif; }
+    h1 { font-size: 1.6rem; margin-bottom: .3rem; }
+    .hint, footer { color: #555; font-size: .9rem; }
+    #player-wrap { width: 100%; aspect-ratio: 16/9; min-height: 200px; background: #eee; }
+    #player, #player-wrap iframe { display: block; width: 100%; height: 100%; min-height: 200px; border: 0; }
+    #status, #alignment-status { font-size: .9rem; }
+    #time { font-variant-numeric: tabular-nums; }
+    #transcript { white-space: pre-wrap; line-height: 2.2; margin: 1rem 0; }
+    .word { font: inherit; line-height: inherit; padding: 0; border: 0; background: transparent; color: #174b78; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+    .word:disabled { cursor: default; color: #666; }
+    .word:hover:not(:disabled), .word:focus-visible { outline: 2px solid #174b78; outline-offset: 2px; }
+    .word.active { background: #ffe483; color: #191919; text-decoration: none; }
+    .untimed { color: #666; }
+    #phones { min-height: 1.8em; color: #555; font-size: .85rem; }
+    #phones span { margin-right: .5em; }
+    #phones .active { color: #191919; text-decoration: underline; font-weight: bold; }
+    footer { border-top: 1px solid #ddd; margin-top: 2rem; padding-top: .8rem; }
+  </style>
+</head>
+<body>
+  <h1>YouTube transcript</h1>
+  <p class="hint">Start with the video's Play button. Click an aligned word to seek and play; the highlighted word follows the video. Untimed text cannot be clicked.</p>
+  <p class="hint">Example data: the words and timings below are synthetic controls, not a transcript of this demonstration video. Replace them with your Gentle output.</p>
+  <div id="player-wrap"><div id="player"></div></div>
+  <p id="status" role="status">Loading alignment…</p>
+  <p>Video time: <output id="time">—</output> <button id="pause" type="button" disabled>Pause</button></p>
+  <p id="alignment-status" role="status"></p>
+  <div id="transcript" aria-label="Aligned transcript"></div>
+  <div id="phones" aria-label="Current word phonemes"></div>
+  <footer><a href="https://github.com/strob/gentle">Gentle</a> · <a href="align.json" download>Alignment JSON</a> · <a href="https://opensource.org/licenses/MIT">MIT license</a></footer>
+  <script type="module">
+    import { startViewer } from './viewer.mjs';
+    // Replace this ID and align.json. The JSON's transcript supplies the text.
+    // For a separate, identical transcript file, set transcriptUrl: './transcript.txt'.
+    startViewer({ videoId: 'M7lc1UVf-VE', alignmentUrl: './align.json', transcriptUrl: null });
+  </script>
+</body>
+</html>

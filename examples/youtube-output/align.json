@@ -1,0 +1,10 @@
+{
+  "transcript": "Zero First <safe> & untimed Last.",
+  "words": [
+    { "case": "success", "word": "zero", "startOffset": 0, "endOffset": 4, "start": 0, "end": 3, "phones": [{ "phone": "Z_B", "duration": 1 }, { "phone": "IY_E", "duration": 2 }] },
+    { "case": "success", "word": "first", "startOffset": 5, "endOffset": 10, "start": 5, "end": 8 },
+    { "case": "success", "word": "safe", "startOffset": 11, "endOffset": 17, "start": 10, "end": 13 },
+    { "case": "not-found-in-audio", "word": "untimed", "startOffset": 20, "endOffset": 27 },
+    { "case": "success", "word": "last", "startOffset": 28, "endOffset": 32, "start": 15, "end": 18 }
+  ]
+}
